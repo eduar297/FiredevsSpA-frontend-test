@@ -42,13 +42,13 @@ const Home = ({ dispatch, groups, professors }) => {
     axios
       .get(`${ENDPOINT}/group/all`)
       .then((res) => {
-        var data = res.data;
-        dispatch(getAllGroups(data.groups));
+        var data1 = res.data;
+        dispatch(getAllGroups(data1.groups));
         axios
           .get(`${ENDPOINT}/professor/all`)
           .then((res) => {
-            var data = res.data;
-            dispatch(getAllProfessors(data.accounts));
+            var data2 = res.data;
+            dispatch(getAllProfessors(data2.accounts));
           })
           .catch((err) => {});
       })
@@ -56,24 +56,18 @@ const Home = ({ dispatch, groups, professors }) => {
   }, []);
 
   React.useEffect(() => {
-    var aux_groups = groups.map((item) => {
-      var aux_group = item;
-      var _professor = professors.find((x) => x._id === aux_group.professorId);
-      aux_group.professorName = `${_professor.name} ${_professor.lastName}`;
-      return aux_group;
-    });
-    set_groups(aux_groups);
-  }, [groups]);
-
-  React.useEffect(() => {
-    var aux_groups = groups.map((item) => {
-      var aux_group = item;
-      var _professor = professors.find((x) => x._id === aux_group.professorId);
-      aux_group.professorName = `${_professor.name} ${_professor.lastName}`;
-      return aux_group;
-    });
-    set_groups(aux_groups);
-  }, [professors]);
+    if (groups.length !== 0 && professors.length !== 0) {
+      var aux_groups = groups.map((item) => {
+        var aux_group = item;
+        var _professor = professors.find(
+          (x) => x._id === aux_group.professorId
+        );
+        aux_group.professorName = `${_professor.name} ${_professor.lastName}`;
+        return aux_group;
+      });
+      set_groups(aux_groups);
+    }
+  }, [groups, professors]);
 
   return (
     <div className={classes.root}>
@@ -86,6 +80,19 @@ const Home = ({ dispatch, groups, professors }) => {
               justifyContent="center"
               alignItems="flex-start"
             >
+              <Grid
+                container
+                direction="row"
+                justifyContent="center"                
+                style={{ marginBottom: "20px" }}
+              >
+                <Grid>
+                  <Typography variant="h4" gutterBottom>
+                    Administrar Grupos
+                  </Typography>
+                  <hr />
+                </Grid>
+              </Grid>
               <Grid item xs={12}>
                 {_groups ? (
                   <GroupTable

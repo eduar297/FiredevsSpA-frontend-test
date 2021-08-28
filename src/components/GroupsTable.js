@@ -25,6 +25,11 @@ import AddIcon from "@material-ui/icons/Add";
 import Fab from "@material-ui/core/Fab";
 import FromGroup from "./FormGroup";
 
+import { deleteGroup } from "../redux/actions";
+
+import { ENDPOINT } from "../config";
+import axios from "axios";
+
 function createData(name, id, professorName, edit) {
   return { name, id, professorName, edit };
 }
@@ -162,6 +167,20 @@ const EnhancedTableToolbar = ({ setOpenFormGroup, setCreate, ...props }) => {
   const classes = useToolbarStyles();
   const { numSelected } = props;
 
+  const handleDelete = () => {
+    props.selected.forEach((id) => {
+      axios
+        .delete(`${ENDPOINT}/group/delete/${id}`)
+        .then((res) => {
+          props.dispatch(deleteGroup(id));
+          props.setSelected([]);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  };
+
   return (
     <Toolbar
       className={clsx(classes.root, {
@@ -190,7 +209,7 @@ const EnhancedTableToolbar = ({ setOpenFormGroup, setCreate, ...props }) => {
 
       {numSelected > 0 ? (
         <Tooltip title="Eliminar">
-          <IconButton aria-label="delete">
+          <IconButton onClick={handleDelete} aria-label="delete">
             <Fab color="secondary">
               <DeleteIcon />
             </Fab>
@@ -264,19 +283,19 @@ export default function GroupTable({ groups, professors, dispatch }) {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.name);
+      const newSelecteds = rows.map((n) => n.id);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
+  const handleClick = (event, id) => {
+    const selectedIndex = selected.indexOf(id);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
+      newSelected = newSelected.concat(selected, id);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -304,7 +323,7 @@ export default function GroupTable({ groups, professors, dispatch }) {
     setDense(event.target.checked);
   };
 
-  const isSelected = (name) => selected.indexOf(name) !== -1;
+  const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const emptyRows =
     rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
@@ -339,6 +358,9 @@ export default function GroupTable({ groups, professors, dispatch }) {
           setOpenFormGroup={setOpenFormGroup}
           setCreate={setCreate}
           numSelected={selected.length}
+          selected={selected}
+          dispatch={dispatch}
+          setSelected={setSelected}
         />
         <TableContainer>
           <Table
@@ -360,7 +382,7 @@ export default function GroupTable({ groups, professors, dispatch }) {
               {stableSort(rows, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
-                  const isItemSelected = isSelected(row.name);
+                  const isItemSelected = isSelected(row.id);
                   const labelId = `enhanced-table-checkbox-${index}`;
 
                   return (
@@ -374,7 +396,7 @@ export default function GroupTable({ groups, professors, dispatch }) {
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
-                          onClick={(event) => handleClick(event, row.name)}
+                          onClick={(event) => handleClick(event, row.id)}
                           checked={isItemSelected}
                           inputProps={{ "aria-labelledby": labelId }}
                         />

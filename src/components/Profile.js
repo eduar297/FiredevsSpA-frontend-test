@@ -61,11 +61,18 @@ const Profile = ({
               alignItems="flex-start"
               // alignItems="center"
             >
-              <Grid item xs={12} style={{ marginBottom: "20px" }}>
-                <Typography variant="h4" gutterBottom>
-                  Mi Perfil
-                </Typography>
-                <hr />
+              <Grid
+                container
+                direction="row"
+                justifyContent="center"                
+                style={{ marginBottom: "20px" }}
+              >
+                <Grid>
+                  <Typography variant="h4" gutterBottom>
+                    Mi Perfil
+                  </Typography>
+                  <hr />
+                </Grid>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <img

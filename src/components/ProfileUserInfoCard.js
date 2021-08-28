@@ -507,6 +507,7 @@ const ProfileUserInfoCard = ({ dispatch, groups, user, role, token }) => {
                 <KeyboardDatePicker
                   autoOk
                   variant="inline"
+                  fullWidth
                   inputVariant="outlined"
                   label="With keyboard"
                   id="date-picker-dialog"

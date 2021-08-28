@@ -15,6 +15,11 @@ import MailIcon from "@material-ui/icons/Mail";
 import NotificationsIcon from "@material-ui/icons/Notifications";
 import MoreIcon from "@material-ui/icons/MoreVert";
 import Button from "@material-ui/core/Button";
+import useScrollTrigger from "@material-ui/core/useScrollTrigger";
+import PropTypes from "prop-types";
+import CssBaseline from "@material-ui/core/CssBaseline";
+
+import { withRouter } from "react-router-dom";
 
 import { connect } from "react-redux";
 
@@ -26,14 +31,17 @@ const useStyles = makeStyles((theme) => ({
   grow: {
     flexGrow: 1,
   },
+  body: {
+    marginTop: theme.spacing(10),
+  },
   menuButton: {
     marginRight: theme.spacing(2),
   },
   title: {
-    display: "none",
-    [theme.breakpoints.up("sm")]: {
-      display: "block",
-    },
+    // display: "none",
+    // [theme.breakpoints.up("sm")]: {
+    //   display: "block",
+    // },
   },
   subtitle: {
     fontSize: "20px",
@@ -90,6 +98,31 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+function ElevationScroll(props) {
+  const { children, window } = props;
+  // Note that you normally won't need to set the window ref as useScrollTrigger
+  // will default to window.
+  // This is only being set here because the demo is in an iframe.
+  const trigger = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 0,
+    target: window ? window() : undefined,
+  });
+
+  return React.cloneElement(children, {
+    elevation: trigger ? 6 : 3,
+  });
+}
+
+ElevationScroll.propTypes = {
+  children: PropTypes.element.isRequired,
+  /**
+   * Injected by the documentation to work in an iframe.
+   * You won't need it on your project.
+   */
+  window: PropTypes.func,
+};
+
 const PrimarySearchAppBar = ({
   Body,
   isSignedIn,
@@ -97,6 +130,8 @@ const PrimarySearchAppBar = ({
   role,
   token,
   dispatch,
+  history,
+  props,
 }) => {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -142,8 +177,14 @@ const PrimarySearchAppBar = ({
       {user ? (
         <MenuItem disabled>{`${user.name} ${user.lastName}`}</MenuItem>
       ) : null}
-      <MenuItem onClick={handleMenuClose}>Perfil</MenuItem>
-      <MenuItem onClick={handleMenuClose}>Editar</MenuItem>
+      <MenuItem
+        onClick={() => {
+          handleMenuClose();
+          history.push("/profile");
+        }}
+      >
+        Perfil
+      </MenuItem>
       <MenuItem
         onClick={() => {
           handleMenuClose();
@@ -160,38 +201,63 @@ const PrimarySearchAppBar = ({
 
   return (
     <div className={classes.grow}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography className={classes.title} variant="h6" noWrap>
-            FiredevsSpA test
-          </Typography>
-          <div className={classes.grow} />
-          <div>
-            {isSignedIn ? (
-              <IconButton
-                edge="end"
-                aria-label="account of current user"
-                aria-controls={menuId}
-                aria-haspopup="true"
-                onClick={handleProfileMenuOpen}
-                color="inherit"
-              >
-                <AccountCircle />
-              </IconButton>
-            ) : (
-              <Button color="inherit" onClick={handleClickOpen}>
-                Entrar
-              </Button>
-            )}
-          </div>
-        </Toolbar>
-      </AppBar>
+      <CssBaseline />
+      <ElevationScroll {...props}>
+        <AppBar>
+          <Toolbar>
+            <Button
+              onClick={() => {
+                history.push("/");
+              }}
+              color="inherit"
+              disableRipple
+            >
+              <Typography className={classes.title} variant="h6">
+                FiredevsSpA test
+              </Typography>
+            </Button>
+            <div className={classes.grow} />
+            <div>
+              {isSignedIn ? (
+                <IconButton
+                  edge="end"
+                  aria-label="account of current user"
+                  aria-controls={menuId}
+                  aria-haspopup="true"
+                  onClick={handleProfileMenuOpen}
+                  color="inherit"
+                >
+                  <AccountCircle />
+                </IconButton>
+              ) : (
+                <Button color="inherit" onClick={handleClickOpen}>
+                  Entrar
+                </Button>
+              )}
+            </div>
+          </Toolbar>
+        </AppBar>
+      </ElevationScroll>
       {renderMenu}
-      <Body />
+      <div className={classes.body}>
+        <Body />
+      </div>
       <LoginRegisterForm open={openLoginForm} setOpen={setOpenLoginForm} />
     </div>
   );
 };
+
+const PrimarySearchAppBarContainer = withRouter(({ Body, ...props }) => (
+  <PrimarySearchAppBar
+    isSignedIn={props.isSignedIn}
+    user={props.user}
+    role={props.role}
+    token={props.role}
+    dispatch={props.dispatch}
+    Body={Body}
+    history={props.history}
+  />
+));
 
 const mapStateToProps = (state) => {
   return {
@@ -202,4 +268,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(PrimarySearchAppBar);
+export default connect(mapStateToProps)(PrimarySearchAppBarContainer);

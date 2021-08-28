@@ -50,8 +50,8 @@ export const signOutProfessor = () => {
 export const registerProfessor = (professor) => {
   return { type: REGISTER_PROFESSOR, professor };
 };
-export const updateProfessor = (professorId, professor) => {
-  return { type: UPDATE_PROFESSOR, professorId, professor };
+export const updateProfessor = (professor) => {
+  return { type: UPDATE_PROFESSOR, user: professor };
 };
 export const deleteProfessor = (professorId) => {
   return { type: DELETE_PROFESSOR, professorId };
@@ -73,8 +73,8 @@ export const signOutStudent = () => {
 export const registerStudent = (student) => {
   return { type: REGISTER_STUDENT, student };
 };
-export const updateStudent = (studentId, student) => {
-  return { type: UPDATE_STUDENT, studentId, student };
+export const updateStudent = (student) => {
+  return { type: UPDATE_STUDENT, user: student };
 };
 export const deleteStudent = (studentId) => {
   return { type: DELETE_STUDENT, studentId };

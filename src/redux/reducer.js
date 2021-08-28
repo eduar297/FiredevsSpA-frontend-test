@@ -87,6 +87,32 @@ const authReducer = (
         role: null,
         token: null,
       };
+    case UPDATE_PROFESSOR:
+      return {
+        ...state,
+        user: action.user,
+      };
+    case UPDATE_STUDENT:
+      return {
+        ...state,
+        user: action.user,
+      };
+    default:
+      return state;
+  }
+};
+
+// reducer de PROFESSOR
+const professorReducer = (
+  state = { professors: [], currentProfessor: null },
+  action
+) => {
+  switch (action.type) {
+    case GET_ALL_PROFESSORS:
+      return {
+        ...state,
+        professors: action.professors,
+      };
     default:
       return state;
   }
@@ -95,7 +121,7 @@ const authReducer = (
 const reducerFunc = combineReducers({
   groupReducer,
   authReducer,
-  // internetReducer,
+  professorReducer,
 });
 
 export default reducerFunc;

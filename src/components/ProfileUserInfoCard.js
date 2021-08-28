@@ -14,8 +14,14 @@ import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
 import Radio from "@material-ui/core/Radio";
 import RadioGroup from "@material-ui/core/RadioGroup";
-import LinearProgress from "@material-ui/core/LinearProgress";
 import MenuItem from "@material-ui/core/MenuItem";
+import AccountCircleIcon from "@material-ui/icons/AccountCircle";
+import LinearProgress from "@material-ui/core/LinearProgress";
+import Dialog from "@material-ui/core/Dialog";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogContentText from "@material-ui/core/DialogContentText";
+import DialogTitle from "@material-ui/core/DialogTitle";
 import "date-fns";
 import DateFnsUtils from "@date-io/date-fns";
 import {
@@ -24,31 +30,16 @@ import {
   KeyboardDatePicker,
 } from "@material-ui/pickers";
 
-import { connect } from "react-redux";
-
 import {
-  signInStudent,
-  registerProfessor,
-  registerStudent,
-  signInProfessor,
+  updateProfessor,
+  updateStudent,
   getAllGroups,
-} from "../../redux/actions";
+  signOutStudent,
+  signOutProfessor,
+} from "../redux/actions";
 
-import { ENDPOINT } from "../../config";
+import { ENDPOINT } from "../config";
 import axios from "axios";
-
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {"Copyright © "}
-      <Link color="inherit" href="#">
-        FiredevsSpA test
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -59,7 +50,7 @@ const useStyles = makeStyles((theme) => ({
   },
   avatar: {
     margin: theme.spacing(1),
-    backgroundColor: theme.palette.secondary.main,
+    backgroundColor: theme.palette.primary.main,
   },
   form: {
     width: "100%", // Fix IE 11 issue.
@@ -70,7 +61,53 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
+const AlertDialog = ({ open, setOpen, handleClickOpen, deleteAccount }) => {
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Eliminar mi cuenta"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Esta seguro que desea eliminar su cuenta?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              deleteAccount();
+              handleClose();
+            }}
+            color="secondary"
+            variant="outlined"
+          >
+            Eliminar
+          </Button>
+          <Button
+            onClick={handleClose}
+            color="primary"
+            autoFocus
+            variant="outlined"
+          >
+            Cancelar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
+
+const ProfileUserInfoCard = ({ dispatch, groups, user, role, token }) => {
   const classes = useStyles();
 
   const towns = [
@@ -134,18 +171,22 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
     "Jobabo",
   ];
 
-  const [role, setRole] = React.useState("student");
-  const [sex, setSex] = React.useState("male");
-  const [group, setGroup] = React.useState(null);
-  const [bornCity, setBornCity] = React.useState(towns[0]);
-  const [bornDate, setBornDate] = React.useState(
-    new Date("2014-08-18T21:11:54")
-  );
-  const [name, setName] = React.useState("");
-  const [lastName, setLastName] = React.useState("");
-  const [email, setEmail] = React.useState("");
+  const [openAlertDialog, setOpenAlertDialog] = React.useState(false);
+  const handleClickOpenAlertDialog = () => {
+    setOpenAlertDialog(true);
+  };
+
+  const [sex, setSex] = React.useState(user ? user.sex : null);
+  const [group, setGroup] = React.useState(user ? user.groupId : null);
+  const [bornCity, setBornCity] = React.useState(user ? user.bornCity : null);
+  const [bornDate, setBornDate] = React.useState(user ? user.bornDate : null);
+  const [name, setName] = React.useState(user ? user.name : null);
+  const [lastName, setLastName] = React.useState(user ? user.lastName : null);
+  const [email, setEmail] = React.useState(user ? user.email : null);
   const [password, setPassword] = React.useState("");
-  const [specialty, setSpecialty] = React.useState("");
+  const [specialty, setSpecialty] = React.useState(
+    role === "professor" ? user.specialty : ""
+  );
 
   const [sexError, setSexError] = React.useState(null);
   const [passwordError, setPasswordError] = React.useState(null);
@@ -158,9 +199,6 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
   const [specialtyError, setSpecialtyError] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
 
-  const handleRolChange = (event) => {
-    setRole(event.target.value);
-  };
   const handleSexChange = (event) => {
     setSex(event.target.value);
   };
@@ -212,28 +250,35 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
     // setSpecialtyError(null);
     setLoading(true);
     if (role === "student") {
+      const bodyParameters = {
+        groupId: group,
+        name,
+        lastName,
+        bornCity,
+        sex,
+        email,
+        bornDate,
+        password,
+      };
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
       axios
-        .post(`${ENDPOINT}/student/register`, {
-          name,
-          lastName,
-          bornCity,
-          sex,
-          email,
-          bornDate,
-          password,
-          groupId: group,
-        })
+        .put(`${ENDPOINT}/student/edit`, bodyParameters, config)
         .then((res) => {
           var data = res.data;
-          var student = data.account;
-          var token = data.token;
-          dispatch(signInStudent(student, token));
+          console.log(data);
+          var student = data.updatedAccount;
+          dispatch(updateStudent(student));
           setLoading(false);
-          handleClose();
         })
         .catch((err) => {
+          //   console.log(err.response.data);
           var error = err.response.data;
           switch (error.type) {
+            case "group":
+              setGroupError(error.msg);
+              break;
             case "name":
               setNameError(error.msg);
               break;
@@ -245,9 +290,6 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
               break;
             case "sex":
               setSexError(error.msg);
-              break;
-            case "group":
-              setGroupError(error.msg);
               break;
             case "email":
             case "unregistered":
@@ -262,26 +304,30 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
           setLoading(false);
         });
     } else {
+      const bodyParameters = {
+        specialty,
+        name,
+        lastName,
+        bornCity,
+        sex,
+        email,
+        bornDate,
+        password,
+      };
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
       axios
-        .post(`${ENDPOINT}/professor/register`, {
-          specialty,
-          name,
-          lastName,
-          bornCity,
-          sex,
-          email,
-          bornDate,
-          password,
-        })
+        .put(`${ENDPOINT}/professor/edit`, bodyParameters, config)
         .then((res) => {
           var data = res.data;
-          var professor = data.account;
-          var token = data.token;
-          dispatch(signInProfessor(professor, token));
+          console.log(data);
+          var professor = data.updatedAccount;
+          dispatch(updateProfessor(professor));
           setLoading(false);
-          handleClose();
         })
         .catch((err) => {
+          //   console.log(err.response.data);
           var error = err.response.data;
           switch (error.type) {
             case "specialty":
@@ -314,15 +360,42 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
     }
   };
 
+  const deleteAccount = () => {
+    const config = {
+      headers: { Authorization: `Bearer ${token}` },
+    };
+    setLoading(true);
+    if (role === "professor")
+      axios
+        .delete(`${ENDPOINT}/professor/delete`, config)
+        .then((res) => {
+          dispatch(signOutProfessor());
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    else if (role === "student")
+      axios
+        .delete(`${ENDPOINT}/student/delete`, config)
+        .then((res) => {
+          dispatch(signOutStudent());
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+  };
+
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
       <div className={classes.paper}>
         <Avatar className={classes.avatar}>
-          <LockOutlinedIcon />
+          <AccountCircleIcon />
         </Avatar>
         <Typography component="h1" variant="h5">
-          Registrarme como{" "}
+          Perfil de{" "}
           <span style={{ color: "gray" }}>
             {role === "student" ? "Estudiante" : "Profesor"}
           </span>
@@ -333,25 +406,6 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
           onSubmit={handleSubmit}
         >
           <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <RadioGroup
-                aria-label="gender"
-                name="gender1"
-                value={role}
-                onChange={handleRolChange}
-              >
-                <FormControlLabel
-                  value="student"
-                  control={<Radio />}
-                  label="Estudiante"
-                />
-                <FormControlLabel
-                  value="professor"
-                  control={<Radio />}
-                  label="Profesor"
-                />
-              </RadioGroup>
-            </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 autoComplete="name"
@@ -493,6 +547,7 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
                 variant="outlined"
                 required
                 fullWidth
+                disabled
                 id="email"
                 label="Email"
                 name="email"
@@ -522,36 +577,38 @@ const SignUp = ({ setLogin, dispatch, handleClose, groups }) => {
               />
             </Grid>
           </Grid>
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            className={classes.submit}
-          >
-            Registrarme
-          </Button>
-          {loading ? <LinearProgress color="primary" /> : null}
-          <Grid container justifyContent="flex-end">
-            <Grid item>
-              <Button onClick={() => setLogin(true)} color="primary">
-                {"Tienes una cuenta? Entrar"}
-              </Button>
-            </Grid>
+          <Grid xs={12}>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              className={classes.submit}
+            >
+              Editar
+            </Button>
           </Grid>
+          <Grid xs={12}>
+            <Button
+              onClick={handleClickOpenAlertDialog}
+              fullWidth
+              variant="contained"
+              color="secondary"
+            >
+              Eliminar
+            </Button>
+          </Grid>
+          {loading ? <LinearProgress color="primary" /> : null}
         </form>
       </div>
-      <Box mt={5} style={{ marginBottom: "10px" }}>
-        <Copyright />
-      </Box>
+      <AlertDialog
+        open={openAlertDialog}
+        setOpen={setOpenAlertDialog}
+        handleClickOpen={handleClickOpenAlertDialog}
+        deleteAccount={deleteAccount}
+      />
     </Container>
   );
 };
 
-const mapStateToProps = (state) => {
-  return {
-    groups: state.groupReducer.groups,
-  };
-};
-
-export default connect(mapStateToProps)(SignUp);
+export default ProfileUserInfoCard;
